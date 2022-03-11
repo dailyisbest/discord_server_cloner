@@ -26,4 +26,4 @@ Author's discord: Ars#9605
 
 Author's discord server: https://discord.gg/428vkmz3tQ
 
-My friend's related [project](https://github.com/BuckwheatSmetankin/discord-server-cloner)
+My friend's related [project](https://github.com/BuckwheatSmetankin/discord-server-cloner) written in Rust
