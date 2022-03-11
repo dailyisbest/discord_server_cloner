@@ -1,5 +1,5 @@
 
-name: publish
+name: build_and_publish
 on: workflow_dispatch
 jobs:
   build_windows:
