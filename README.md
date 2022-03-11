@@ -23,7 +23,9 @@ Click clone button.
 ## How to get your discord token
 
 Open Discord in browser.
+
 Open a JavaScript console in browser (F12 or Ctrl + Shift + I).
+
 Go to the `Application` then `Local Storage` then `http://discord.com/` and press Ctrl + R. This will reload your webpage, and "token" value will appear for a short time. Just copy it. This is your token.
 
 ## Info
