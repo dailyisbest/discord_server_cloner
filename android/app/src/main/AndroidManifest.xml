@@ -1,5 +1,5 @@
 <manifest xmlns:android="http://schemas.android.com/apk/res/android"
-    package="com.example.discord_server_cloner">
+    package="com.arsoban.cloner">
    <application
         android:label="discord_server_cloner"
         android:name="${applicationName}"
