@@ -12,6 +12,10 @@ jobs:
 
       - run: flutter config --enable-windows-desktop
       - run: flutter build windows
+      - uses: actions/upload-artifact@v3
+        with:
+          name: windows
+          path: build/windows/runner/Release
 
   build_linux:
     runs-on: ubuntu-latest
@@ -27,6 +31,11 @@ jobs:
 
       - run: flutter config --enable-linux-desktop
       - run: flutter build linux
+      - uses: actions/upload-artifact@v3
+        with:
+          name: linux
+          path: build/linux/x64/release/bundle
+
 
   build_macos:
     runs-on: macos-latest
@@ -37,6 +46,10 @@ jobs:
           flutter-version: '2.10.3'
       - run: flutter config --enable-macos-desktop
       - run: flutter build macos
+      - uses: actions/upload-artifact@v3
+        with:
+          name: macos
+          path: build/macos/Build/Products/Release
 
   build_android:
     runs-on: windows-2019
@@ -52,6 +65,10 @@ jobs:
 
       - run: flutter pub get
       - run: flutter build apk
+      - uses: actions/upload-artifact@v3
+        with:
+          name: android
+          path: build/app/outputs/flutter-apk.apk
 
   build_ios:
     runs-on: macos-latest
@@ -69,35 +86,39 @@ jobs:
           ln -s ../Runner.app
           cd ..
           zip -r app.ipa Payload
-
-  publish:
-    runs-on: ubuntu-latest
-    needs: [build_windows, build_linux, build_macos, build_android, build_ios]
-
-    steps:
-      - uses: actions/checkout@v2
-
-      - uses: thedoctor0/zip-release@master
+      - uses: actions/upload-artifact@v3
         with:
-          type: "zip"
-          filename: "windows.zip"
-          path: "./build/windows/runner/Release"
+          name: ios
+          path: build/ios/iphoneos/app.ipa
 
-      - uses: thedoctor0/zip-release@master
-        with:
-          type: "zip"
-          filename: "linux.zip"
-          path: "./build/linux/x64/release/bundle"
-
-      - uses: thedoctor0/zip-release@master
-        with:
-          type: "zip"
-          filename: "macos.zip"
-          path: "./build/macos/Build/Products/Release"
-
-      - uses: ncipollo/release-action@v1
-        with:
-          artifacts: "windows.zip,linux.zip,macos.zip,build/app/outputs/flutter-apk.apk,build/ios/iphoneos/app.ipa"
-          name: 1.0
-          tag: 1.0
-          token: ${{ secrets.GITHUB_TOKEN }}
+#  publish:
+#    runs-on: ubuntu-latest
+#    needs: [build_windows, build_linux, build_macos, build_android, build_ios]
+#
+#    steps:
+#      - uses: actions/checkout@v2
+#
+#      - uses: thedoctor0/zip-release@master
+#        with:
+#          type: "zip"
+#          filename: "windows.zip"
+#          path: "./build/windows/runner/Release"
+#
+#      - uses: thedoctor0/zip-release@master
+#        with:
+#          type: "zip"
+#          filename: "linux.zip"
+#          path: "./build/linux/x64/release/bundle"
+#
+#      - uses: thedoctor0/zip-release@master
+#        with:
+#          type: "zip"
+#          filename: "macos.zip"
+#          path: "./build/macos/Build/Products/Release"
+#
+#      - uses: ncipollo/release-action@v1
+#        with:
+#          artifacts: "windows.zip,linux.zip,macos.zip,build/app/outputs/flutter-apk.apk,build/ios/iphoneos/app.ipa"
+#          name: 1.0
+#          tag: 1.0
+#          token: ${{ secrets.GITHUB_TOKEN }}
