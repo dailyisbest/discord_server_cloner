@@ -167,6 +167,16 @@ class _ClonePageState extends State<ClonePage> {
 
         }
 
+        if (element["bitrate"] != null) {
+
+          if ((element["bitrate"] as int) > 96000) {
+
+            element["bitrate"] = 96000;
+
+          }
+
+        }
+
         if ((element["type"] as int) != 0 && (element["type"] as int) != 2 && (element["type"] as int) != 4) {
 
           element["type"] = 0;
