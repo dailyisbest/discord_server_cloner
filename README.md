@@ -6,10 +6,6 @@ Fully clones server.
 
 Clones: server icon, all channels with permissions, all roles with permissions, emojis, messages(if you want).
 
-Rewrite of [this](https://github.com/Arsoban/DiscordServerClonerGUI) project.
-
-Also check my friend's [project](https://github.com/BuckwheatSmetankin/discord-server-cloner).
-
 ## Usage
 
 Download program from releases.
