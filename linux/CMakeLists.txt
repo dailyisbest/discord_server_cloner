@@ -2,7 +2,7 @@ cmake_minimum_required(VERSION 3.10)
 project(runner LANGUAGES CXX)
 
 set(BINARY_NAME "discord_server_cloner")
-set(APPLICATION_ID "com.example.discord_server_cloner")
+set(APPLICATION_ID "com.arsoban.discord_server_cloner")
 
 cmake_policy(SET CMP0063 NEW)
 
