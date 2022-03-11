@@ -47,6 +47,7 @@ class _LoginPageState extends State<LoginPage> {
               child: TextField(
                 controller: tokenEditingController,
                 decoration: const InputDecoration(
+                  labelText: "Token",
                   border: OutlineInputBorder()
                 ),
                 onChanged: (value) {

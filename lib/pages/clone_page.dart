@@ -70,6 +70,7 @@ class _ClonePageState extends State<ClonePage> {
                 child: TextField(
                   controller: serverIdController,
                   decoration: const InputDecoration(
+                      labelText: "Server ID",
                       border: OutlineInputBorder()
                   ),
                   onChanged: (value) {
@@ -114,6 +115,14 @@ class _ClonePageState extends State<ClonePage> {
 
     debugPrint(guildToClone.toString());
 
+    // get guild icon
+
+    var oldIconBytesResponse = await http.get(Uri.parse("https://cdn.discordapp.com/icons/${guildToClone["id"]}/${guildToClone["icon"]}"));
+
+    var oldIconBytes = oldIconBytesResponse.bodyBytes;
+
+    var newServerIcon = "data:image/png;base64,${base64Encode(oldIconBytes)}.png?size=240";
+
     // get roles list
 
     var toCreateRolesList = (guildToClone["roles"] as List<dynamic>);
@@ -148,25 +157,21 @@ class _ClonePageState extends State<ClonePage> {
 
       } else {
 
+        if ((element["type"] as int) == 13) {
+
+          if ((element["user_limit"] as int) > 99) {
+
+            element["user_limit"] = 0;
+
+          }
+
+        }
+
         if ((element["type"] as int) != 0 && (element["type"] as int) != 2 && (element["type"] as int) != 4) {
 
           element["type"] = 0;
 
         }
-
-        // for (var channel in categoryChannelsFromGuildJson) {
-
-          // if (element["parent_id"] == channel["id"]) {
-
-        try {
-
-          element["parent_id"] = await categoryChannelsFromGuildJson.last["id"];
-
-        } catch (exc) { }
-
-          // }
-
-        // }
 
         otherChannelsFromGuildJson.add(element);
 
@@ -188,7 +193,16 @@ class _ClonePageState extends State<ClonePage> {
 
     toCreateChannelsList = allChannelsFromGuildJson;
 
-    debugPrint(toCreateChannelsList.toString());
+    var counter = 0;
+
+    for (var elem in toCreateChannelsList) {
+
+      debugPrint(counter.toString());
+      counter++;
+
+      debugPrint("toCreateChannelsList: name: ${elem["name"]} position: ${elem["position"]} parent_id: ${elem["parent_id"]} user_limit: ${elem["user_limit"]}");
+
+    }
 
     // create guild
 
@@ -201,7 +215,7 @@ class _ClonePageState extends State<ClonePage> {
         body: jsonEncode(
             {
               "name": guildToClone["name"],
-              "icon": guildToClone["icon"],
+              "icon": newServerIcon,
               "channels": toCreateChannelsList,
               "roles": toCreateRolesList
             }
