@@ -22,13 +22,9 @@ Click clone button.
 
 ## How to get your discord token
 
-1. Open Discord in browser.
-2. Open a JavaScript console in browser (F12).
-3. Go to the `Application` then `Local Storage` then `http://discord.com/` and press Ctrl + R. This will reload your webpage, and "token" value will appear for a short time. Just copy it. This is your token.
-4. Paste your token into token text field and press login button. (Remember, that you shouldn't give your token ANYONE. Also, the app doesn't save your token.)
-5. Find the server you want to clone and in the context menu select "Copy ID" (This works only in Developer Mode)
-6. Paste server ID into the text area in the app.
-7. Press "Clone", and your server will be cloned and appear in Discord.
+Open Discord in browser.
+Open a JavaScript console in browser (F12 or Ctrl + Shift + I).
+Go to the `Application` then `Local Storage` then `http://discord.com/` and press Ctrl + R. This will reload your webpage, and "token" value will appear for a short time. Just copy it. This is your token.
 
 ## Info
 
