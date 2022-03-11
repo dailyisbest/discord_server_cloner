@@ -51,20 +51,20 @@ class _ClonePageState extends State<ClonePage> {
                   ),
                 ),
               ),
-              Row(
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: [
-                  Checkbox(
-                    value: context.watch<CloneProvider>().isMessagesCloningEnabled,
-                    onChanged: (isEnabled) {
-
-                      context.read<CloneProvider>().setMessagesCloningEnabled(isEnabled!);
-
-                    },
-                  ),
-                  const Text("Messages Cloning")
-                ],
-              ),
+              // Row(
+              //   mainAxisAlignment: MainAxisAlignment.center,
+              //   children: [
+              //     Checkbox(
+              //       value: context.watch<CloneProvider>().isMessagesCloningEnabled,
+              //       onChanged: (isEnabled) {
+              //
+              //         context.read<CloneProvider>().setMessagesCloningEnabled(isEnabled!);
+              //
+              //       },
+              //     ),
+              //     const Text("Messages Cloning")
+              //   ],
+              // ),
               Padding(
                 padding: const EdgeInsets.all(8.0),
                 child: TextField(
@@ -83,11 +83,7 @@ class _ClonePageState extends State<ClonePage> {
                 child: ElevatedButton(
                   onPressed: () {
 
-                    if (!context.read<CloneProvider>().isMessagesCloningEnabled) {
-
-                      cloneGuild(context.read<CloneProvider>().guildId);
-
-                    }
+                    cloneGuild(context.read<CloneProvider>().guildId);
 
                   },
                   child: const Text("Clone"),
@@ -235,6 +231,32 @@ class _ClonePageState extends State<ClonePage> {
     debugPrint(newGuild.body);
 
     var newGuildJsonBody = jsonDecode(newGuild.body);
+
+    // create emojis
+
+    for (var oldServerEmoji in guildToClone["emojis"] as List<dynamic>) {
+
+      var oldEmojiBytesResponse = await http.get(Uri.parse("https://cdn.discordapp.com/emojis/${oldServerEmoji["id"]}${(oldServerEmoji["animated"] as bool) ? ".gif" : ".png"}"));
+
+      var oldImageBytes = oldEmojiBytesResponse.bodyBytes;
+
+      var newEmojiImage = "data:image/webp;base64,${base64Encode(oldImageBytes)}";
+
+      await http.post(
+        Uri.parse("${ClonerConstants.endpoint}/guilds/${newGuildJsonBody["id"]}/emojis"),
+          headers: {
+            "Authorization": context.read<CloneProvider>().token,
+            "Content-Type": "application/json",
+          },
+          body: jsonEncode(
+              {
+                "name": oldServerEmoji["name"],
+                "image": newEmojiImage
+              }
+          )
+      );
+
+    }
 
   }
 
