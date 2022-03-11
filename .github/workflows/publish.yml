@@ -81,7 +81,7 @@ jobs:
         with:
           type: "zip"
           filename: "windows.zip"
-          path: "build\windows\runner\Release"
+          path: "build/windows/runner/Release"
 
       - uses: thedoctor0/zip-release@master
         with:
