@@ -1,0 +1,12 @@
+name: clear_artifacts
+on: workflow_dispatch
+
+jobs:
+  remove_artifacts:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+
+    steps:
+      - uses: c-hive/gha-remove-artifacts@v1
+        with:
+          age: "11 hours"
