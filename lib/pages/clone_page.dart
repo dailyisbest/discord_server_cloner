@@ -2,6 +2,7 @@ import 'dart:convert';
 
 import 'package:discord_server_cloner/providers/clone_provider.dart';
 import 'package:discord_server_cloner/util/cloner_constants.dart';
+import 'package:discord_server_cloner/util/rate_limited.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:http/http.dart' as http;
@@ -423,20 +424,7 @@ class _ClonePageState extends State<ClonePage> {
 
           channelMessagesStream(channels[0]["id"]).listen((message) async {
 
-            await http.post(
-                Uri.parse("${ClonerConstants.endpoint}/webhooks/${webhookJson["id"]}/${webhookJson["token"]}"),
-                headers: {
-                  "Authorization": context.read<CloneProvider>().token,
-                  "Content-Type": "application/json",
-                },
-                body: jsonEncode({
-                  "content": message["content"],
-                  "username": message["author"]["username"],
-                  "avatar_url": "https://cdn.discordapp.com/avatars/${message["author"]["id"]}/${message["author"]["avatar"]}.png",
-                  "embeds": message["embeds"],
-                  "attachments": message["attachments"]
-                })
-            );
+            sendMessageWebhook([context, webhookJson, message], {});
 
           });
 
@@ -447,6 +435,25 @@ class _ClonePageState extends State<ClonePage> {
     }
 
   }
+
+  final sendMessageWebhook = RateLimited((BuildContext context, dynamic webhookJson, dynamic message) async {
+
+    await http.post(
+        Uri.parse("${ClonerConstants.endpoint}/webhooks/${webhookJson["id"]}/${webhookJson["token"]}"),
+        headers: {
+          "Authorization": context.read<CloneProvider>().token,
+          "Content-Type": "application/json",
+        },
+        body: jsonEncode({
+          "content": message["content"],
+          "username": message["author"]["username"],
+          "avatar_url": "https://cdn.discordapp.com/avatars/${message["author"]["id"]}/${message["author"]["avatar"]}.png",
+          "embeds": message["embeds"],
+          "attachments": message["attachments"]
+        })
+    );
+
+  }, 5, const Duration(seconds: 5));
 
   Stream<dynamic> channelMessagesStream(String channelId) async* {
 
