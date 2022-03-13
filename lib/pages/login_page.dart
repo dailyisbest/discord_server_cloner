@@ -58,7 +58,12 @@ class _LoginPageState extends State<LoginPage> {
             Padding(
               padding: const EdgeInsets.all(8.0),
               child: ElevatedButton(
-                onPressed: () {
+                style: ElevatedButton.styleFrom(
+                  onSurface: context.watch<CloneProvider>().tryingToLogin ? Colors.grey : Colors.green
+                ),
+                onPressed: context.watch<CloneProvider>().tryingToLogin ? null : () {
+
+                  context.read<CloneProvider>().setTryingStates(login: true, disconnect: false, clone: false);
 
                   http.get(
                     Uri.parse("${ClonerConstants.endpoint}/users/@me"),
@@ -76,6 +81,9 @@ class _LoginPageState extends State<LoginPage> {
 
                       Navigator.pushNamed(context, "/clone");
 
+                      context.read<CloneProvider>().setLogged(true);
+                      context.read<CloneProvider>().setTryingStates(login: false, disconnect: false, clone: false);
+
                     } else {
 
                       ScaffoldMessenger.of(context).showSnackBar(
@@ -83,6 +91,8 @@ class _LoginPageState extends State<LoginPage> {
                           content: Text("Specified token is invalid"),
                         )
                       );
+
+                      context.read<CloneProvider>().setTryingStates(login: false, disconnect: false, clone: false);
 
                     }
 

@@ -81,12 +81,44 @@ class _ClonePageState extends State<ClonePage> {
               Padding(
                 padding: const EdgeInsets.all(8.0),
                 child: ElevatedButton(
-                  onPressed: () {
+                  style: ElevatedButton.styleFrom(
+                      onSurface: context.watch<CloneProvider>().tryingToClone ? Colors.grey : Colors.green
+                  ),
+                  onPressed: context.watch<CloneProvider>().tryingToClone ? null : () {
 
-                    cloneGuild(context.read<CloneProvider>().guildId);
+                    context.read<CloneProvider>().setTryingStates(login: false, disconnect: false, clone: true);
+
+                    cloneGuild(context.read<CloneProvider>().guildId).then((value) {
+                      ScaffoldMessenger.of(context).showSnackBar(
+                          const SnackBar(
+                            content: Text("Server cloning ended"),
+                          )
+                      );
+                      context.read<CloneProvider>().setTryingStates(login: false, disconnect: false, clone: false);
+                    });
 
                   },
                   child: const Text("Clone"),
+                ),
+              ),
+              Padding(
+                padding: const EdgeInsets.all(8.0),
+                child: ElevatedButton(
+                  style: ElevatedButton.styleFrom(
+                      onSurface: context.watch<CloneProvider>().tryingToDisconnect ? Colors.grey : Colors.green
+                  ),
+                  onPressed: context.watch<CloneProvider>().tryingToDisconnect ? null : () {
+
+                    context.read<CloneProvider>().setTryingStates(login: false, disconnect: true, clone: false);
+
+                    Navigator.pushNamed(context, "/login");
+
+                    context.read<CloneProvider>().setLogged(false);
+
+                    context.read<CloneProvider>().setTryingStates(login: false, disconnect: false, clone: false);
+
+                  },
+                  child: const Text("Disconnect"),
                 ),
               )
             ],
@@ -111,6 +143,10 @@ class _ClonePageState extends State<ClonePage> {
 
     debugPrint(guildToClone.toString());
 
+    if (isDisconnected()) {
+      return;
+    }
+
     // get guild icon
 
     var oldIconBytesResponse = await http.get(Uri.parse("https://cdn.discordapp.com/icons/${guildToClone["id"]}/${guildToClone["icon"]}"));
@@ -119,6 +155,10 @@ class _ClonePageState extends State<ClonePage> {
 
     var newServerIcon = "data:image/png;base64,${base64Encode(oldIconBytes)}.png?size=240";
 
+    if (isDisconnected()) {
+      return;
+    }
+
     // get roles list
 
     var toCreateRolesList = (guildToClone["roles"] as List<dynamic>);
@@ -126,6 +166,10 @@ class _ClonePageState extends State<ClonePage> {
     toCreateRolesList.sort((a, b) {
       return (a["position"] as int).compareTo(b["position"]);
     });
+
+    if (isDisconnected()) {
+      return;
+    }
 
     // get channels list
 
@@ -210,6 +254,10 @@ class _ClonePageState extends State<ClonePage> {
 
     }
 
+    if (isDisconnected()) {
+      return;
+    }
+
     // create guild
 
     var newGuild = await http.post(
@@ -228,9 +276,23 @@ class _ClonePageState extends State<ClonePage> {
         )
     );
 
-    debugPrint(newGuild.body);
+    debugPrint("NewGuildBody: ${newGuild.body}");
 
     var newGuildJsonBody = jsonDecode(newGuild.body);
+
+    if (newGuildJsonBody["message"] != null) {
+
+      ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text("There is an error, maybe you have servers limit"),
+          )
+      );
+
+    }
+
+    if (isDisconnected()) {
+      return;
+    }
 
     // create emojis
 
@@ -256,7 +318,21 @@ class _ClonePageState extends State<ClonePage> {
           )
       );
 
+      if (isDisconnected()) {
+        return;
+      }
+
     }
+
+    if (isDisconnected()) {
+      return;
+    }
+
+  }
+
+  bool isDisconnected() {
+
+    return !context.read<CloneProvider>().isLoggedIn;
 
   }
 

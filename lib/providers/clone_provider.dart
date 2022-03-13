@@ -12,6 +12,12 @@ class CloneProvider with ChangeNotifier {
 
   bool isMessagesCloningEnabled = false;
 
+  bool tryingToLogin = false;
+
+  bool tryingToDisconnect = false;
+
+  bool tryingToClone = false;
+
   void setToken(String tokenToSet) {
 
     token = tokenToSet;
@@ -47,6 +53,18 @@ class CloneProvider with ChangeNotifier {
   void setMessagesCloningEnabled(bool isEnabled) {
 
     isMessagesCloningEnabled = isEnabled;
+
+    notifyListeners();
+
+  }
+
+  void setTryingStates({ required bool login, required bool disconnect, required bool clone }) {
+
+    tryingToLogin = login;
+
+    tryingToDisconnect = disconnect;
+
+    tryingToClone = clone;
 
     notifyListeners();
 
