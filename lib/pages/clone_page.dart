@@ -335,24 +335,18 @@ class _ClonePageState extends State<ClonePage> {
 
       // clone messages
 
-      var channelMessages = await channelMessagesStream().toList();
-
-      channelMessages = channelMessages.reversed.toList();
-
-      for (var msg in channelMessages) {
-
-        debugPrint(msg["content"].toString());
-
-      }
+      var channelMessages = channelMessagesStream("952483546918953043").listen((message) {
+        debugPrint(message["content"]);
+      });
 
     }
 
   }
 
-  Stream<dynamic> channelMessagesStream() async* {
+  Stream<dynamic> channelMessagesStream(String channelId) async* {
 
     var firstMessageResponse = await http.get(
-      Uri.parse("${ClonerConstants.endpoint}/channels/879384177978511394/messages?limit=1"),
+      Uri.parse("${ClonerConstants.endpoint}/channels/$channelId/messages?limit=1&after=1"),
       headers: {
         "Authorization": context.read<CloneProvider>().token,
         "Content-Type": "application/json",
@@ -365,10 +359,12 @@ class _ClonePageState extends State<ClonePage> {
 
     dynamic lastMessage = firstMessageJson;
 
+    // debugPrint("First message: ${firstMessageJson["content"].toString()}");
+
     while (true) {
 
       var messagesResponse = await http.get(
-        Uri.parse("${ClonerConstants.endpoint}/channels/879384177978511394/messages?limit=100&before=${lastMessage["id"]}"),
+        Uri.parse("${ClonerConstants.endpoint}/channels/$channelId/messages?limit=100&after=${lastMessage["id"]}"),
         headers: {
           "Authorization": context.read<CloneProvider>().token,
           "Content-Type": "application/json",
@@ -377,7 +373,9 @@ class _ClonePageState extends State<ClonePage> {
 
       var messagesJson = jsonDecode(messagesResponse.body);
 
-      for (var msg in (messagesJson as List<dynamic>)) {
+      // debugPrint("MessagesJSON: ${messagesJson.toString()}");
+
+      for (var msg in (messagesJson as List<dynamic>).reversed.toList()) {
 
         // debugPrint(msg["content"].toString());
 
@@ -387,7 +385,7 @@ class _ClonePageState extends State<ClonePage> {
 
       try {
 
-        lastMessage = (messagesJson as List<dynamic>).last;
+        lastMessage = (messagesJson as List<dynamic>).reversed.toList().last;
 
       } catch (exc) {
         break;
