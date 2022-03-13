@@ -5,6 +5,7 @@ import 'package:discord_server_cloner/util/cloner_constants.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:http/http.dart' as http;
+import 'package:collection/collection.dart';
 
 class ClonePage extends StatefulWidget {
   const ClonePage({Key? key}) : super(key: key);
@@ -130,214 +131,318 @@ class _ClonePageState extends State<ClonePage> {
 
   Future<void> cloneGuild(String guildId) async {
 
-    // // get guild to clone
-    //
-    // var guildToCloneResponse = await http.get(
-    //     Uri.parse("${ClonerConstants.endpoint}/guilds/${context.read<CloneProvider>().guildId}"),
-    //     headers: {
-    //       "Authorization": context.read<CloneProvider>().token,
-    //       "Content-Type": "application/json",
-    //     }
-    // );
-    //
-    // var guildToClone = jsonDecode(guildToCloneResponse.body);
-    //
-    // debugPrint(guildToClone.toString());
-    //
-    // if (isDisconnected()) {
-    //   return;
-    // }
-    //
-    // // get guild icon
-    //
-    // var oldIconBytesResponse = await http.get(Uri.parse("https://cdn.discordapp.com/icons/${guildToClone["id"]}/${guildToClone["icon"]}"));
-    //
-    // var oldIconBytes = oldIconBytesResponse.bodyBytes;
-    //
-    // var newServerIcon = "data:image/png;base64,${base64Encode(oldIconBytes)}.png?size=240";
-    //
-    // if (isDisconnected()) {
-    //   return;
-    // }
-    //
-    // // get roles list
-    //
-    // var toCreateRolesList = (guildToClone["roles"] as List<dynamic>);
-    //
-    // toCreateRolesList.sort((a, b) {
-    //   return (a["position"] as int).compareTo(b["position"]);
-    // });
-    //
-    // if (isDisconnected()) {
-    //   return;
-    // }
-    //
-    // // get channels list
-    //
-    // var toCreateChannelsList = <dynamic>[];
-    //
-    // var channelsFromGuildResponse = await http.get(
-    //   Uri.parse("${ClonerConstants.endpoint}/guilds/$guildId/channels"),
-    //   headers: {
-    //     "Authorization": context.read<CloneProvider>().token,
-    //     "Content-Type": "application/json",
-    //   }
-    // );
-    //
-    // var channelsFromGuildJson = jsonDecode(channelsFromGuildResponse.body);
-    //
-    // var categoryChannelsFromGuildJson = <dynamic>[];
-    //
-    // var otherChannelsFromGuildJson = <dynamic>[];
-    //
-    // for (var element in (channelsFromGuildJson as List<dynamic>)) {
-    //
-    //   if ((element["type"] as int) == 4) {
-    //
-    //     categoryChannelsFromGuildJson.add(element);
-    //
-    //   } else {
-    //
-    //     if ((element["type"] as int) == 13) {
-    //
-    //       if ((element["user_limit"] as int) > 99) {
-    //
-    //         element["user_limit"] = 0;
-    //
-    //       }
-    //
-    //     }
-    //
-    //     if (element["bitrate"] != null) {
-    //
-    //       if ((element["bitrate"] as int) > 96000) {
-    //
-    //         element["bitrate"] = 96000;
-    //
-    //       }
-    //
-    //     }
-    //
-    //     if ((element["type"] as int) != 0 && (element["type"] as int) != 2 && (element["type"] as int) != 4) {
-    //
-    //       element["type"] = 0;
-    //
-    //     }
-    //
-    //     otherChannelsFromGuildJson.add(element);
-    //
-    //   }
-    //
-    // }
-    //
-    // var allChannelsFromGuildJson = <dynamic>[];
-    //
-    // otherChannelsFromGuildJson.sort((a, b) {
-    //   return (a["position"] as int).compareTo(b["position"]);
-    // });
-    //
-    // categoryChannelsFromGuildJson.sort((a, b) {
-    //   return (a["position"] as int).compareTo(b["position"]);
-    // });
-    //
-    // allChannelsFromGuildJson = categoryChannelsFromGuildJson + otherChannelsFromGuildJson;
-    //
-    // toCreateChannelsList = allChannelsFromGuildJson;
-    //
-    // var counter = 0;
-    //
-    // for (var elem in toCreateChannelsList) {
-    //
-    //   debugPrint(counter.toString());
-    //   counter++;
-    //
-    //   debugPrint("toCreateChannelsList: name: ${elem["name"]} position: ${elem["position"]} parent_id: ${elem["parent_id"]} user_limit: ${elem["user_limit"]}");
-    //
-    // }
-    //
-    // if (isDisconnected()) {
-    //   return;
-    // }
-    //
-    // // create guild
-    //
-    // var newGuild = await http.post(
-    //     Uri.parse("${ClonerConstants.endpoint}/guilds"),
-    //     headers: {
-    //       "Authorization": context.read<CloneProvider>().token,
-    //       "Content-Type": "application/json",
-    //     },
-    //     body: jsonEncode(
-    //         {
-    //           "name": guildToClone["name"],
-    //           "icon": newServerIcon,
-    //           "channels": toCreateChannelsList,
-    //           "roles": toCreateRolesList
-    //         }
-    //     )
-    // );
-    //
-    // debugPrint("NewGuildBody: ${newGuild.body}");
-    //
-    // var newGuildJsonBody = jsonDecode(newGuild.body);
-    //
-    // if (newGuildJsonBody["message"] != null) {
-    //
-    //   ScaffoldMessenger.of(context).showSnackBar(
-    //       const SnackBar(
-    //         content: Text("There is an error, maybe you have servers limit"),
-    //       )
-    //   );
-    //
-    //   return;
-    //
-    // }
-    //
-    // if (isDisconnected()) {
-    //   return;
-    // }
-    //
-    // // create emojis
-    //
-    // for (var oldServerEmoji in guildToClone["emojis"] as List<dynamic>) {
-    //
-    //   var oldEmojiBytesResponse = await http.get(Uri.parse("https://cdn.discordapp.com/emojis/${oldServerEmoji["id"]}${(oldServerEmoji["animated"] as bool) ? ".gif" : ".png"}"));
-    //
-    //   var oldImageBytes = oldEmojiBytesResponse.bodyBytes;
-    //
-    //   var newEmojiImage = "data:image/webp;base64,${base64Encode(oldImageBytes)}";
-    //
-    //   await http.post(
-    //     Uri.parse("${ClonerConstants.endpoint}/guilds/${newGuildJsonBody["id"]}/emojis"),
-    //       headers: {
-    //         "Authorization": context.read<CloneProvider>().token,
-    //         "Content-Type": "application/json",
-    //       },
-    //       body: jsonEncode(
-    //           {
-    //             "name": oldServerEmoji["name"],
-    //             "image": newEmojiImage
-    //           }
-    //       )
-    //   );
-    //
-    //   if (isDisconnected()) {
-    //     return;
-    //   }
-    //
-    // }
-    //
-    // if (isDisconnected()) {
-    //   return;
-    // }
+    // get guild to clone
+
+    var guildToCloneResponse = await http.get(
+        Uri.parse("${ClonerConstants.endpoint}/guilds/${context.read<CloneProvider>().guildId}"),
+        headers: {
+          "Authorization": context.read<CloneProvider>().token,
+          "Content-Type": "application/json",
+        }
+    );
+
+    var guildToClone = jsonDecode(guildToCloneResponse.body);
+
+    debugPrint(guildToClone.toString());
+
+    if (isDisconnected()) {
+      return;
+    }
+
+    // get guild icon
+
+    var oldIconBytesResponse = await http.get(Uri.parse("https://cdn.discordapp.com/icons/${guildToClone["id"]}/${guildToClone["icon"]}"));
+
+    var oldIconBytes = oldIconBytesResponse.bodyBytes;
+
+    var newServerIcon = "data:image/png;base64,${base64Encode(oldIconBytes)}.png?size=240";
+
+    if (isDisconnected()) {
+      return;
+    }
+
+    // get roles list
+
+    var toCreateRolesList = (guildToClone["roles"] as List<dynamic>);
+
+    toCreateRolesList.sort((a, b) {
+      return (a["position"] as int).compareTo(b["position"]);
+    });
+
+    if (isDisconnected()) {
+      return;
+    }
+
+    // get channels list
+
+    var toCreateChannelsList = <dynamic>[];
+
+    var channelsFromGuildResponse = await http.get(
+      Uri.parse("${ClonerConstants.endpoint}/guilds/$guildId/channels"),
+      headers: {
+        "Authorization": context.read<CloneProvider>().token,
+        "Content-Type": "application/json",
+      }
+    );
+
+    var channelsFromGuildJson = jsonDecode(channelsFromGuildResponse.body);
+
+    var categoryChannelsFromGuildJson = <dynamic>[];
+
+    var otherChannelsFromGuildJson = <dynamic>[];
+
+    for (var element in (channelsFromGuildJson as List<dynamic>)) {
+
+      if ((element["type"] as int) == 4) {
+
+        categoryChannelsFromGuildJson.add(element);
+
+      } else {
+
+        if ((element["type"] as int) == 13) {
+
+          if ((element["user_limit"] as int) > 99) {
+
+            element["user_limit"] = 0;
+
+          }
+
+        }
+
+        if (element["bitrate"] != null) {
+
+          if ((element["bitrate"] as int) > 96000) {
+
+            element["bitrate"] = 96000;
+
+          }
+
+        }
+
+        if ((element["type"] as int) != 0 && (element["type"] as int) != 2 && (element["type"] as int) != 4) {
+
+          element["type"] = 0;
+
+        }
+
+        otherChannelsFromGuildJson.add(element);
+
+      }
+
+    }
+
+    var allChannelsFromGuildJson = <dynamic>[];
+
+    otherChannelsFromGuildJson.sort((a, b) {
+      return (a["position"] as int).compareTo(b["position"]);
+    });
+
+    categoryChannelsFromGuildJson.sort((a, b) {
+      return (a["position"] as int).compareTo(b["position"]);
+    });
+
+    allChannelsFromGuildJson = categoryChannelsFromGuildJson + otherChannelsFromGuildJson;
+
+    toCreateChannelsList = allChannelsFromGuildJson;
+
+    var counter = 0;
+
+    for (var elem in toCreateChannelsList) {
+
+      debugPrint(counter.toString());
+      counter++;
+
+      debugPrint("toCreateChannelsList: name: ${elem["name"]} position: ${elem["position"]} parent_id: ${elem["parent_id"]} user_limit: ${elem["user_limit"]}");
+
+    }
+
+    if (isDisconnected()) {
+      return;
+    }
+
+    // create guild
+
+    var newGuild = await http.post(
+        Uri.parse("${ClonerConstants.endpoint}/guilds"),
+        headers: {
+          "Authorization": context.read<CloneProvider>().token,
+          "Content-Type": "application/json",
+        },
+        body: jsonEncode(
+            {
+              "name": guildToClone["name"],
+              "icon": newServerIcon,
+              "channels": toCreateChannelsList,
+              "roles": toCreateRolesList
+            }
+        )
+    );
+
+    debugPrint("NewGuildBody: ${newGuild.body}");
+
+    var newGuildJsonBody = jsonDecode(newGuild.body);
+
+    if (newGuildJsonBody["message"] != null) {
+
+      ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text("There is an error, maybe you have servers limit"),
+          )
+      );
+
+      return;
+
+    }
+
+    if (isDisconnected()) {
+      return;
+    }
+
+    // create emojis
+
+    for (var oldServerEmoji in guildToClone["emojis"] as List<dynamic>) {
+
+      var oldEmojiBytesResponse = await http.get(Uri.parse("https://cdn.discordapp.com/emojis/${oldServerEmoji["id"]}${(oldServerEmoji["animated"] as bool) ? ".gif" : ".png"}"));
+
+      var oldImageBytes = oldEmojiBytesResponse.bodyBytes;
+
+      var newEmojiImage = "data:image/webp;base64,${base64Encode(oldImageBytes)}";
+
+      await http.post(
+        Uri.parse("${ClonerConstants.endpoint}/guilds/${newGuildJsonBody["id"]}/emojis"),
+          headers: {
+            "Authorization": context.read<CloneProvider>().token,
+            "Content-Type": "application/json",
+          },
+          body: jsonEncode(
+              {
+                "name": oldServerEmoji["name"],
+                "image": newEmojiImage
+              }
+          )
+      );
+
+      if (isDisconnected()) {
+        return;
+      }
+
+    }
+
+    if (isDisconnected()) {
+      return;
+    }
 
     if (context.read<CloneProvider>().isMessagesCloningEnabled) {
 
-      // clone messages
+      // get new guild channels
 
-      var channelMessages = channelMessagesStream("952483546918953043").listen((message) {
-        debugPrint(message["content"]);
+      var newGuildChannelsResponse = await http.get(
+          Uri.parse("${ClonerConstants.endpoint}/guilds/${newGuildJsonBody["id"]}/channels"),
+          headers: {
+            "Authorization": context.read<CloneProvider>().token,
+            "Content-Type": "application/json",
+          }
+      );
+
+      var channelsFromNewGuildJson = jsonDecode(newGuildChannelsResponse.body);
+
+      var categoryChannelsFromNewGuildJson = <dynamic>[];
+
+      var otherChannelsFromNewGuildJson = <dynamic>[];
+
+      for (var element in (channelsFromNewGuildJson as List<dynamic>)) {
+
+        if ((element["type"] as int) == 4) {
+
+          categoryChannelsFromNewGuildJson.add(element);
+
+        } else {
+
+          if ((element["type"] as int) == 13) {
+
+            if ((element["user_limit"] as int) > 99) {
+
+              element["user_limit"] = 0;
+
+            }
+
+          }
+
+          if (element["bitrate"] != null) {
+
+            if ((element["bitrate"] as int) > 96000) {
+
+              element["bitrate"] = 96000;
+
+            }
+
+          }
+
+          if ((element["type"] as int) != 0 && (element["type"] as int) != 2 && (element["type"] as int) != 4) {
+
+            element["type"] = 0;
+
+          }
+
+          otherChannelsFromNewGuildJson.add(element);
+
+        }
+
+      }
+
+      var allChannelsFromNewGuildJson = <dynamic>[];
+
+      otherChannelsFromNewGuildJson.sort((a, b) {
+        return (a["position"] as int).compareTo(b["position"]);
       });
+
+      categoryChannelsFromNewGuildJson.sort((a, b) {
+        return (a["position"] as int).compareTo(b["position"]);
+      });
+
+      allChannelsFromNewGuildJson = categoryChannelsFromNewGuildJson + otherChannelsFromNewGuildJson;
+
+      //clone messages
+
+      for (var channels in IterableZip<dynamic>([toCreateChannelsList, allChannelsFromNewGuildJson])) {
+
+        if ((channels[0]["type"] as int) == 0) {
+
+          var webhookResponse = await http.post(
+            Uri.parse("${ClonerConstants.endpoint}/channels/${channels[1]["id"]}/webhooks"),
+            headers: {
+              "Authorization": context.read<CloneProvider>().token,
+              "Content-Type": "application/json",
+            },
+            body: jsonEncode({
+              "name": "Cloner"
+            })
+          );
+
+          var webhookJson = jsonDecode(webhookResponse.body);
+
+          channelMessagesStream(channels[0]["id"]).listen((message) async {
+
+            await http.post(
+                Uri.parse("${ClonerConstants.endpoint}/webhooks/${webhookJson["id"]}/${webhookJson["token"]}"),
+                headers: {
+                  "Authorization": context.read<CloneProvider>().token,
+                  "Content-Type": "application/json",
+                },
+                body: jsonEncode({
+                  "content": message["content"],
+                  "username": message["author"]["username"],
+                  "avatar_url": "https://cdn.discordapp.com/avatars/${message["author"]["id"]}/${message["author"]["avatar"]}.png",
+                  "embeds": message["embeds"],
+                  "attachments": message["attachments"]
+                })
+            );
+
+          });
+
+        }
+
+      }
 
     }
 
