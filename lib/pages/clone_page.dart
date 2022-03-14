@@ -424,7 +424,7 @@ class _ClonePageState extends State<ClonePage> {
 
           channelMessagesStream(channels[0]["id"]).listen((message) async {
 
-            sendMessageWebhook([context, webhookJson, message], {});
+            await sendMessageWebhook([context, webhookJson, message], {});
 
           });
 

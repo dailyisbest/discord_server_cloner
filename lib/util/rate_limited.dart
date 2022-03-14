@@ -17,15 +17,15 @@ class RateLimited {
     usesRemaining = usesBeforeLimit;
   }
 
-  Object? call(List<dynamic> args, Map<Symbol, dynamic> namedArgs) {
+  Future<void> call(List<dynamic> args, Map<Symbol, dynamic> namedArgs) async {
 
     executionsInQueue.add([args, namedArgs]);
 
-    execute();
+    await execute();
 
   }
 
-  void execute() {
+  Future<void> execute() async {
 
     if (!isCountingStarted) {
 
@@ -37,7 +37,7 @@ class RateLimited {
 
       usesRemaining--;
 
-      Function.apply(func, executionsInQueue.first[0], executionsInQueue.first[1]);
+      await Function.apply(func, executionsInQueue.first[0], executionsInQueue.first[1]);
 
       executionsInQueue.removeAt(0);
 
@@ -55,11 +55,11 @@ class RateLimited {
 
     isCountingStarted = false;
 
-    var limit = (executionsInQueue.length > 5) ? 5 : executionsInQueue.length;
+    var limit = (executionsInQueue.length > usesBeforeLimit) ? usesBeforeLimit : executionsInQueue.length;
 
     for (var i = 0; i < limit; i++) {
 
-      execute();
+      await execute();
 
     }
 
