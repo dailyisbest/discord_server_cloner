@@ -407,6 +407,10 @@ class _ClonePageState extends State<ClonePage> {
 
       for (var channels in IterableZip<dynamic>([toCreateChannelsList, allChannelsFromNewGuildJson])) {
 
+        if (isDisconnected()) {
+          return;
+        }
+
         if ((channels[0]["type"] as int) == 0) {
 
           var webhookResponse = await http.post(
@@ -457,6 +461,10 @@ class _ClonePageState extends State<ClonePage> {
 
   Stream<dynamic> channelMessagesStream(String channelId) async* {
 
+    if (isDisconnected()) {
+      return;
+    }
+
     var firstMessageResponse = await http.get(
       Uri.parse("${ClonerConstants.endpoint}/channels/$channelId/messages?limit=1&after=1"),
       headers: {
@@ -471,7 +479,7 @@ class _ClonePageState extends State<ClonePage> {
 
     dynamic lastMessage = firstMessageJson;
 
-    // debugPrint("First message: ${firstMessageJson["content"].toString()}");
+    // debugPrint("First message: ${firstMessageJson.toString()}");
 
     while (true) {
 

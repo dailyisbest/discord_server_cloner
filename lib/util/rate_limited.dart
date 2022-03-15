@@ -11,6 +11,8 @@ class RateLimited {
 
   bool isCountingStarted = false;
 
+  bool isSomethingExecuting = false;
+
   List<List<dynamic>> executionsInQueue = [];
 
   RateLimited(this.func, this.usesBeforeLimit, this.rateLimitedTime) {
@@ -27,6 +29,12 @@ class RateLimited {
 
   Future<void> execute() async {
 
+    if (isSomethingExecuting) {
+
+      return;
+
+    }
+
     if (!isCountingStarted) {
 
       launchTimeReset();
@@ -35,11 +43,15 @@ class RateLimited {
 
     if (usesRemaining >= 1) {
 
+      isSomethingExecuting = true;
+
       usesRemaining--;
 
       await Function.apply(func, executionsInQueue.first[0], executionsInQueue.first[1]);
 
       executionsInQueue.removeAt(0);
+
+      isSomethingExecuting = false;
 
     }
 
