@@ -19,6 +19,13 @@ class _ClonePageState extends State<ClonePage> {
 
   var serverIdController = TextEditingController();
 
+  var sharedRateLimited = SharedReturnedRateLimited(5, const Duration(seconds: 5));
+
+  @override
+  void initState() {
+    super.initState();
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -413,22 +420,47 @@ class _ClonePageState extends State<ClonePage> {
 
         if ((channels[0]["type"] as int) == 0) {
 
-          var webhookResponse = await http.post(
-            Uri.parse("${ClonerConstants.endpoint}/channels/${channels[1]["id"]}/webhooks"),
-            headers: {
-              "Authorization": context.read<CloneProvider>().token,
-              "Content-Type": "application/json",
-            },
-            body: jsonEncode({
-              "name": "Cloner"
-            })
-          );
+          var webhookJson = await sharedRateLimited(() async {
+            var webhookResponse = await http.post(
+                Uri.parse("${ClonerConstants.endpoint}/channels/${channels[1]["id"]}/webhooks"),
+                headers: {
+                  "Authorization": context.read<CloneProvider>().token,
+                  "Content-Type": "application/json",
+                },
+                body: jsonEncode({
+                  "name": "Cloner"
+                })
+            );
 
-          var webhookJson = jsonDecode(webhookResponse.body);
+            var webhookJson = jsonDecode(webhookResponse.body);
+
+            debugPrint(webhookJson.toString());
+
+            return webhookJson;
+          }, [], {});
+
+          print(webhookJson.toString());
 
           channelMessagesStream(channels[0]["id"]).listen((message) async {
+            
+            await sharedRateLimited(() async {
 
-            await sendMessageWebhook([context, webhookJson, message], {});
+              await http.post(
+                  Uri.parse("${ClonerConstants.endpoint}/webhooks/${webhookJson["id"]}/${webhookJson["token"]}"),
+                  headers: {
+                    "Authorization": context.read<CloneProvider>().token,
+                    "Content-Type": "application/json",
+                  },
+                  body: jsonEncode({
+                    "content": message["content"],
+                    "username": message["author"]["username"],
+                    "avatar_url": "https://cdn.discordapp.com/avatars/${message["author"]["id"]}/${message["author"]["avatar"]}.png",
+                    "embeds": message["embeds"],
+                    "attachments": message["attachments"]
+                  })
+              );
+              
+            }, [], {});
 
           });
 
@@ -440,40 +472,32 @@ class _ClonePageState extends State<ClonePage> {
 
   }
 
-  final sendMessageWebhook = RateLimited((BuildContext context, dynamic webhookJson, dynamic message) async {
-
-    await http.post(
-        Uri.parse("${ClonerConstants.endpoint}/webhooks/${webhookJson["id"]}/${webhookJson["token"]}"),
-        headers: {
-          "Authorization": context.read<CloneProvider>().token,
-          "Content-Type": "application/json",
-        },
-        body: jsonEncode({
-          "content": message["content"],
-          "username": message["author"]["username"],
-          "avatar_url": "https://cdn.discordapp.com/avatars/${message["author"]["id"]}/${message["author"]["avatar"]}.png",
-          "embeds": message["embeds"],
-          "attachments": message["attachments"]
-        })
-    );
-
-  }, 5, const Duration(seconds: 5));
-
   Stream<dynamic> channelMessagesStream(String channelId) async* {
 
     if (isDisconnected()) {
       return;
     }
 
-    var firstMessageResponse = await http.get(
-      Uri.parse("${ClonerConstants.endpoint}/channels/$channelId/messages?limit=1&after=1"),
-      headers: {
-        "Authorization": context.read<CloneProvider>().token,
-        "Content-Type": "application/json",
-      },
-    );
+    var messagesFromChannel = await sharedRateLimited((String channelId, String limit, String after) async {
 
-    var firstMessageJson = jsonDecode(firstMessageResponse.body)[0];
+      var messageResponse = await http.get(
+        Uri.parse("${ClonerConstants.endpoint}/channels/$channelId/messages?limit=$limit&after=$after"),
+        headers: {
+          "Authorization": context.read<CloneProvider>().token,
+          "Content-Type": "application/json",
+        },
+      );
+
+      debugPrint("LastMessagesResponse: ${messageResponse.body.toString()}");
+
+      var messagesJson = jsonDecode(messageResponse.body);
+
+      return messagesJson;
+    }, [channelId, "1", "1"], {});
+
+    // var messagesFromChannel = await getMessagesFromChannel([channelId, "1", "1"], {});
+
+    var firstMessageJson = messagesFromChannel[0];
 
     yield firstMessageJson;
 
@@ -483,17 +507,27 @@ class _ClonePageState extends State<ClonePage> {
 
     while (true) {
 
-      var messagesResponse = await http.get(
-        Uri.parse("${ClonerConstants.endpoint}/channels/$channelId/messages?limit=100&after=${lastMessage["id"]}"),
-        headers: {
-          "Authorization": context.read<CloneProvider>().token,
-          "Content-Type": "application/json",
-        },
-      );
+      debugPrint("LastMessage: ${lastMessage.toString()}");
 
-      var messagesJson = jsonDecode(messagesResponse.body);
+      var messagesJson = await sharedRateLimited((String channelId, String limit, String after) async {
 
-      // debugPrint("MessagesJSON: ${messagesJson.toString()}");
+        var messageResponse = await http.get(
+          Uri.parse("${ClonerConstants.endpoint}/channels/$channelId/messages?limit=$limit&after=$after"),
+          headers: {
+            "Authorization": context.read<CloneProvider>().token,
+            "Content-Type": "application/json",
+          },
+        );
+
+        var messagesJson = jsonDecode(messageResponse.body);
+
+        return messagesJson;
+
+      }, [channelId, "100", "${lastMessage["id"]}"], {});
+
+      // var messagesJson = await getMessagesFromChannel([channelId, "100", "${lastMessage["id"]}"], {});
+
+      debugPrint("MessagesJSON: ${messagesJson.toString()}");
 
       for (var msg in (messagesJson as List<dynamic>).reversed.toList()) {
 
