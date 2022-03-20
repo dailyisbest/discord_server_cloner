@@ -19,7 +19,7 @@ class _ClonePageState extends State<ClonePage> {
 
   var serverIdController = TextEditingController();
 
-  var sharedRateLimited = SharedReturnedRateLimited(5, const Duration(seconds: 5));
+  var sharedRateLimited = SharedReturnedRateLimited(5, const Duration(seconds: 10));
 
   @override
   void initState() {
@@ -141,6 +141,90 @@ class _ClonePageState extends State<ClonePage> {
 
     // get guild to clone
 
+    var guildToClone = await getGuildToClone();
+
+    if (isDisconnected()) {
+      return;
+    }
+
+    // get guild icon
+
+    var newServerIcon = await getGuildIcon(guildToClone);
+
+    if (isDisconnected()) {
+      return;
+    }
+
+    // get roles list
+
+    var toCreateRolesList = await getRolesList(guildToClone);
+
+    if (isDisconnected()) {
+      return;
+    }
+
+    // get channels list
+
+    var toCreateChannelsList = await getChannelsList(guildToClone["id"]);
+
+    if (isDisconnected()) {
+      return;
+    }
+
+    // create guild
+
+    var newGuildJsonBody = await createGuild(guildToClone, newServerIcon, toCreateChannelsList, toCreateRolesList);
+
+    if (newGuildJsonBody is String) {
+
+      if (newGuildJsonBody == "limit") {
+
+        ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(
+              content: Text("There is an error, maybe you have servers limit"),
+            )
+        );
+
+        return;
+
+      }
+
+    }
+
+    if (isDisconnected()) {
+      return;
+    }
+
+    // create emojis
+
+    var emojisResult = await createEmojis(guildToClone, newGuildJsonBody);
+
+    if (emojisResult is String) {
+
+      if (emojisResult == "disconnected") {
+
+        return;
+
+      }
+
+    }
+
+    if (isDisconnected()) {
+      return;
+    }
+
+    // clone messages if enabled
+
+    if (context.read<CloneProvider>().isMessagesCloningEnabled) {
+
+      await cloneMessages(newGuildJsonBody, toCreateChannelsList);
+
+    }
+
+  }
+
+  Future<dynamic> getGuildToClone() async {
+
     var guildToCloneResponse = await http.get(
         Uri.parse("${ClonerConstants.endpoint}/guilds/${context.read<CloneProvider>().guildId}"),
         headers: {
@@ -149,27 +233,21 @@ class _ClonePageState extends State<ClonePage> {
         }
     );
 
-    var guildToClone = jsonDecode(guildToCloneResponse.body);
+    return jsonDecode(guildToCloneResponse.body);
 
-    debugPrint(guildToClone.toString());
+  }
 
-    if (isDisconnected()) {
-      return;
-    }
-
-    // get guild icon
+  Future<dynamic> getGuildIcon(dynamic guildToClone) async {
 
     var oldIconBytesResponse = await http.get(Uri.parse("https://cdn.discordapp.com/icons/${guildToClone["id"]}/${guildToClone["icon"]}"));
 
     var oldIconBytes = oldIconBytesResponse.bodyBytes;
 
-    var newServerIcon = "data:image/png;base64,${base64Encode(oldIconBytes)}.png?size=240";
+    return "data:image/png;base64,${base64Encode(oldIconBytes)}.png?size=240";
 
-    if (isDisconnected()) {
-      return;
-    }
+  }
 
-    // get roles list
+  Future<List<dynamic>> getRolesList(dynamic guildToClone) async {
 
     var toCreateRolesList = (guildToClone["roles"] as List<dynamic>);
 
@@ -177,20 +255,20 @@ class _ClonePageState extends State<ClonePage> {
       return (a["position"] as int).compareTo(b["position"]);
     });
 
-    if (isDisconnected()) {
-      return;
-    }
+    return toCreateRolesList;
 
-    // get channels list
+  }
+
+  Future<List<dynamic>> getChannelsList(String guildId) async {
 
     var toCreateChannelsList = <dynamic>[];
 
     var channelsFromGuildResponse = await http.get(
-      Uri.parse("${ClonerConstants.endpoint}/guilds/$guildId/channels"),
-      headers: {
-        "Authorization": context.read<CloneProvider>().token,
-        "Content-Type": "application/json",
-      }
+        Uri.parse("${ClonerConstants.endpoint}/guilds/$guildId/channels"),
+        headers: {
+          "Authorization": context.read<CloneProvider>().token,
+          "Content-Type": "application/json",
+        }
     );
 
     var channelsFromGuildJson = jsonDecode(channelsFromGuildResponse.body);
@@ -253,22 +331,11 @@ class _ClonePageState extends State<ClonePage> {
 
     toCreateChannelsList = allChannelsFromGuildJson;
 
-    var counter = 0;
+    return toCreateChannelsList;
 
-    for (var elem in toCreateChannelsList) {
+  }
 
-      debugPrint(counter.toString());
-      counter++;
-
-      debugPrint("toCreateChannelsList: name: ${elem["name"]} position: ${elem["position"]} parent_id: ${elem["parent_id"]} user_limit: ${elem["user_limit"]}");
-
-    }
-
-    if (isDisconnected()) {
-      return;
-    }
-
-    // create guild
+  Future<dynamic> createGuild(dynamic guildToClone, String newServerIcon, List<dynamic> toCreateChannelsList, List<dynamic> toCreateRolesList) async {
 
     var newGuild = await http.post(
         Uri.parse("${ClonerConstants.endpoint}/guilds"),
@@ -286,27 +353,19 @@ class _ClonePageState extends State<ClonePage> {
         )
     );
 
-    debugPrint("NewGuildBody: ${newGuild.body}");
-
     var newGuildJsonBody = jsonDecode(newGuild.body);
 
     if (newGuildJsonBody["message"] != null) {
 
-      ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Text("There is an error, maybe you have servers limit"),
-          )
-      );
-
-      return;
+      return "limit";
 
     }
 
-    if (isDisconnected()) {
-      return;
-    }
+    return newGuildJsonBody;
 
-    // create emojis
+  }
+
+  Future<dynamic> createEmojis(dynamic guildToClone, dynamic newGuildJsonBody) async {
 
     for (var oldServerEmoji in guildToClone["emojis"] as List<dynamic>) {
 
@@ -317,7 +376,7 @@ class _ClonePageState extends State<ClonePage> {
       var newEmojiImage = "data:image/webp;base64,${base64Encode(oldImageBytes)}";
 
       await http.post(
-        Uri.parse("${ClonerConstants.endpoint}/guilds/${newGuildJsonBody["id"]}/emojis"),
+          Uri.parse("${ClonerConstants.endpoint}/guilds/${newGuildJsonBody["id"]}/emojis"),
           headers: {
             "Authorization": context.read<CloneProvider>().token,
             "Content-Type": "application/json",
@@ -331,140 +390,100 @@ class _ClonePageState extends State<ClonePage> {
       );
 
       if (isDisconnected()) {
-        return;
+        return "disconnected";
       }
 
     }
 
-    if (isDisconnected()) {
-      return;
-    }
+  }
 
-    if (context.read<CloneProvider>().isMessagesCloningEnabled) {
+  Future<dynamic> cloneMessages(dynamic newGuildJsonBody, dynamic toCreateChannelsList) async {
 
-      // get new guild channels
+    // get new guild channels
 
-      var newGuildChannelsResponse = await http.get(
-          Uri.parse("${ClonerConstants.endpoint}/guilds/${newGuildJsonBody["id"]}/channels"),
-          headers: {
-            "Authorization": context.read<CloneProvider>().token,
-            "Content-Type": "application/json",
-          }
-      );
+    var allChannelsFromNewGuildJson = await getChannelsList(newGuildJsonBody["id"].toString());
 
-      var channelsFromNewGuildJson = jsonDecode(newGuildChannelsResponse.body);
+    //clone messages
 
-      var categoryChannelsFromNewGuildJson = <dynamic>[];
+    for (var channels in IterableZip<dynamic>([toCreateChannelsList, allChannelsFromNewGuildJson])) {
 
-      var otherChannelsFromNewGuildJson = <dynamic>[];
-
-      for (var element in (channelsFromNewGuildJson as List<dynamic>)) {
-
-        if ((element["type"] as int) == 4) {
-
-          categoryChannelsFromNewGuildJson.add(element);
-
-        } else {
-
-          if ((element["type"] as int) == 13) {
-
-            if ((element["user_limit"] as int) > 99) {
-
-              element["user_limit"] = 0;
-
-            }
-
-          }
-
-          if (element["bitrate"] != null) {
-
-            if ((element["bitrate"] as int) > 96000) {
-
-              element["bitrate"] = 96000;
-
-            }
-
-          }
-
-          if ((element["type"] as int) != 0 && (element["type"] as int) != 2 && (element["type"] as int) != 4) {
-
-            element["type"] = 0;
-
-          }
-
-          otherChannelsFromNewGuildJson.add(element);
-
-        }
-
+      if (isDisconnected()) {
+        return "disconnected";
       }
 
-      var allChannelsFromNewGuildJson = <dynamic>[];
+      if ((channels[0]["type"] as int) == 0) {
 
-      otherChannelsFromNewGuildJson.sort((a, b) {
-        return (a["position"] as int).compareTo(b["position"]);
-      });
+        var webhookJson = await sharedRateLimited(() async {
+          var webhookResponse = await http.post(
+              Uri.parse("${ClonerConstants.endpoint}/channels/${channels[1]["id"]}/webhooks"),
+              headers: {
+                "Authorization": context.read<CloneProvider>().token,
+                "Content-Type": "application/json",
+              },
+              body: jsonEncode({
+                "name": "Cloner"
+              })
+          );
 
-      categoryChannelsFromNewGuildJson.sort((a, b) {
-        return (a["position"] as int).compareTo(b["position"]);
-      });
+          var webhookJson = jsonDecode(webhookResponse.body);
 
-      allChannelsFromNewGuildJson = categoryChannelsFromNewGuildJson + otherChannelsFromNewGuildJson;
+          debugPrint("WebhookJson: $webhookJson");
 
-      //clone messages
+          return webhookJson;
+        }, [], {});
 
-      for (var channels in IterableZip<dynamic>([toCreateChannelsList, allChannelsFromNewGuildJson])) {
-
-        if (isDisconnected()) {
-          return;
+        if (webhookJson is List) {
+          webhookJson = (webhookJson as List).first;
         }
 
-        if ((channels[0]["type"] as int) == 0) {
+        print("WebhookJson: $webhookJson");
 
-          var webhookJson = await sharedRateLimited(() async {
-            var webhookResponse = await http.post(
-                Uri.parse("${ClonerConstants.endpoint}/channels/${channels[1]["id"]}/webhooks"),
-                headers: {
-                  "Authorization": context.read<CloneProvider>().token,
-                  "Content-Type": "application/json",
-                },
-                body: jsonEncode({
-                  "name": "Cloner"
-                })
-            );
+        channelMessagesStream(channels[0]["id"]).listen((message) async {
 
-            var webhookJson = jsonDecode(webhookResponse.body);
+          dynamic messageContent = "Unknown content";
+          dynamic messageUsername = "Unknown username";
+          dynamic messageAuthorAvatarUrl = "Unknown avatar";
+          dynamic messageEmbeds = "Unknown embeds";
+          dynamic messageAttachments = "Unknown attachments";
 
-            debugPrint(webhookJson.toString());
+          await sharedRateLimited(() async {
 
-            return webhookJson;
+            if (message != null) {
+
+              messageContent = message["content"] ?? "Unknown content";
+
+              if (message["author"] != null) {
+
+                messageUsername = message["author"]["username"] ?? "Unknown username";
+                messageAuthorAvatarUrl = "https://cdn.discordapp.com/avatars/${message["author"]["id"] ?? "Unknown id"}/${message["author"]["avatar"] ?? "Unknown avatar"}.png";
+
+              }
+
+              messageEmbeds = message["embeds"] ?? "Unknown embeds";
+              messageAttachments = message["attachments"] ?? "Unknown attachments";
+
+            }
+
+            // await http.post(
+            //     Uri.parse("${ClonerConstants.endpoint}/webhooks/${webhookJson["id"]}/${webhookJson["token"]}"),
+            //     headers: {
+            //       "Authorization": context.read<CloneProvider>().token,
+            //       "Content-Type": "application/json",
+            //     },
+            //     body: jsonEncode({
+            //       "content": message["content"],
+            //       "username": message["author"]["username"],
+            //       "avatar_url": "https://cdn.discordapp.com/avatars/${message["author"]["id"]}/${message["author"]["avatar"]}.png",
+            //       "embeds": message["embeds"],
+            //       "attachments": message["attachments"]
+            //     })
+            // );
+
           }, [], {});
 
-          print(webhookJson.toString());
+          print("Channel: ${channels[0]["name"]} Message: $messageContent Author: $messageUsername");
 
-          channelMessagesStream(channels[0]["id"]).listen((message) async {
-            
-            await sharedRateLimited(() async {
-
-              await http.post(
-                  Uri.parse("${ClonerConstants.endpoint}/webhooks/${webhookJson["id"]}/${webhookJson["token"]}"),
-                  headers: {
-                    "Authorization": context.read<CloneProvider>().token,
-                    "Content-Type": "application/json",
-                  },
-                  body: jsonEncode({
-                    "content": message["content"],
-                    "username": message["author"]["username"],
-                    "avatar_url": "https://cdn.discordapp.com/avatars/${message["author"]["id"]}/${message["author"]["avatar"]}.png",
-                    "embeds": message["embeds"],
-                    "attachments": message["attachments"]
-                  })
-              );
-              
-            }, [], {});
-
-          });
-
-        }
+        });
 
       }
 
@@ -488,26 +507,50 @@ class _ClonePageState extends State<ClonePage> {
         },
       );
 
-      debugPrint("LastMessagesResponse: ${messageResponse.body.toString()}");
+      debugPrint("LastMessagesResponse: ${messageResponse.body}");
 
       var messagesJson = jsonDecode(messageResponse.body);
+
+      debugPrint("LastMessagesResponseSerialized: $messagesJson");
 
       return messagesJson;
     }, [channelId, "1", "1"], {});
 
     // var messagesFromChannel = await getMessagesFromChannel([channelId, "1", "1"], {});
 
-    var firstMessageJson = messagesFromChannel[0];
+    print("MessagesFromChannel[0]: $messagesFromChannel");
 
-    yield firstMessageJson;
+    var firstMessageJson = (messagesFromChannel is List) ? (messagesFromChannel as List<dynamic>) : messagesFromChannel;
 
-    dynamic lastMessage = firstMessageJson;
+    if (firstMessageJson is List) {
+
+      if (firstMessageJson.isNotEmpty) {
+
+        firstMessageJson = firstMessageJson.first;
+
+        print("MessagesFromChannel[0] Updated: $firstMessageJson");
+
+        yield firstMessageJson;
+
+      }
+
+    } else {
+
+      // firstMessageJson = 0;
+
+      print("MessagesFromChannel[0] Updated: $firstMessageJson");
+
+      yield firstMessageJson;
+
+    }
+
+    var lastMessage = firstMessageJson;
 
     // debugPrint("First message: ${firstMessageJson.toString()}");
 
     while (true) {
 
-      debugPrint("LastMessage: ${lastMessage.toString()}");
+      // debugPrint("LastMessage: $lastMessage");
 
       var messagesJson = await sharedRateLimited((String channelId, String limit, String after) async {
 
@@ -527,19 +570,31 @@ class _ClonePageState extends State<ClonePage> {
 
       // var messagesJson = await getMessagesFromChannel([channelId, "100", "${lastMessage["id"]}"], {});
 
-      debugPrint("MessagesJSON: ${messagesJson.toString()}");
+      debugPrint("MessagesJSON: $messagesJson");
 
-      for (var msg in (messagesJson as List<dynamic>).reversed.toList()) {
+      if (messagesJson is List) {
 
-        // debugPrint(msg["content"].toString());
+        for (var msg in (messagesJson as List<dynamic>).reversed.toList()) {
 
-        yield msg;
+          debugPrint("Message emitted: $msg");
+
+          yield (msg is List) ? msg.first : msg;
+
+        }
+
+      } else {
+
+        debugPrint("Message emitted: $messagesJson");
+
+        yield messagesJson;
 
       }
 
       try {
 
         lastMessage = (messagesJson as List<dynamic>).reversed.toList().last;
+
+        print("NewLastMessage: $lastMessage");
 
       } catch (exc) {
         break;

@@ -157,7 +157,7 @@ class ReturnedRateLimited<T> {
 
 }
 
-class SharedReturnedRateLimited<T> {
+class SharedReturnedRateLimited {
 
   int usesBeforeLimit;
 
@@ -175,7 +175,7 @@ class SharedReturnedRateLimited<T> {
     usesRemaining = usesBeforeLimit;
   }
 
-  Future<T> call(Function func, List<dynamic> args, Map<Symbol, dynamic> namedArgs) async {
+  Future<dynamic> call(Function func, List<dynamic> args, Map<Symbol, dynamic> namedArgs) async {
 
     executionsInQueue.add([func, args, namedArgs]);
 
@@ -185,7 +185,7 @@ class SharedReturnedRateLimited<T> {
 
   }
 
-  Future<T> execute() async {
+  Future<dynamic> execute() async {
 
     while (isSomethingExecuting) {
 
